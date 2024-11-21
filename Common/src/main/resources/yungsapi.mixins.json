@@ -7,6 +7,10 @@
   "refmap": "yungsapi.refmap.json",
   "mixins": [
     "BeardifierMixin",
+    "NoBasaltColumnsInStructuresMixin",
+    "NoDeltasInStructuresMixin",
+    "NoMagmaInStructuresMixin",
+    "NoVinesInStructuresMixin",
     "accessor.BeardifierAccessor",
     "accessor.BoundingBoxAccessor",
     "accessor.FeaturePoolElementAccessor",
