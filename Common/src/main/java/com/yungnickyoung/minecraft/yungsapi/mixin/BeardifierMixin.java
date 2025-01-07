@@ -1,9 +1,9 @@
 package com.yungnickyoung.minecraft.yungsapi.mixin;
 
-import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.beardifier.EnhancedBeardifierHelper;
 import com.yungnickyoung.minecraft.yungsapi.world.structure.YungJigsawStructure;
-import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.EnhancedTerrainAdaptation;
+import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.adaptations.EnhancedTerrainAdaptation;
 import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.beardifier.EnhancedBeardifierData;
+import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.beardifier.EnhancedBeardifierHelper;
 import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.beardifier.EnhancedBeardifierRigid;
 import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.beardifier.EnhancedJigsawJunction;
 import it.unimi.dsi.fastutil.objects.ObjectListIterator;
@@ -11,6 +11,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.levelgen.Beardifier;
 import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.NoiseChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,8 +25,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class BeardifierMixin implements EnhancedBeardifierData {
     @Unique
     private ObjectListIterator<EnhancedJigsawJunction> enhancedJunctionIterator;
+
     @Unique
     private ObjectListIterator<EnhancedBeardifierRigid> enhancedPieceIterator;
+
+    @Unique
+    private NoiseChunk noiseChunk;
 
     @Inject(method = "forStructuresInChunk", at = @At("RETURN"), cancellable = true)
     private static void yungsapi_supportCustomTerrainAdaptations(StructureManager structureManager, ChunkPos chunkPos, CallbackInfoReturnable<Beardifier> cir) {
@@ -40,23 +45,39 @@ public class BeardifierMixin implements EnhancedBeardifierData {
         cir.setReturnValue(newDensity);
     }
 
+    @Unique
     @Override
     public ObjectListIterator<EnhancedBeardifierRigid> getEnhancedPieceIterator() {
         return this.enhancedPieceIterator;
     }
 
+    @Unique
     @Override
     public void setEnhancedPieceIterator(ObjectListIterator<EnhancedBeardifierRigid> enhancedPieceIterator) {
         this.enhancedPieceIterator = enhancedPieceIterator;
     }
 
+    @Unique
     @Override
     public ObjectListIterator<EnhancedJigsawJunction> getEnhancedJunctionIterator() {
         return enhancedJunctionIterator;
     }
 
+    @Unique
     @Override
     public void setEnhancedJunctionIterator(ObjectListIterator<EnhancedJigsawJunction> enhancedJunctionIterator) {
         this.enhancedJunctionIterator = enhancedJunctionIterator;
+    }
+
+    @Unique
+    @Override
+    public NoiseChunk getNoiseChunk() {
+        return this.noiseChunk;
+    }
+
+    @Unique
+    @Override
+    public void setNoiseChunk(NoiseChunk noiseChunk) {
+        this.noiseChunk = noiseChunk;
     }
 }

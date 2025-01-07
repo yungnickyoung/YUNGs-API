@@ -1,6 +1,6 @@
 package com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.beardifier;
 
-import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.EnhancedTerrainAdaptation;
+import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.adaptations.EnhancedTerrainAdaptation;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.Beardifier;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;

@@ -8,8 +8,8 @@ import com.yungnickyoung.minecraft.yungsapi.world.structure.condition.DepthCondi
 import com.yungnickyoung.minecraft.yungsapi.world.structure.condition.StructureCondition;
 import com.yungnickyoung.minecraft.yungsapi.world.structure.condition.StructureConditionType;
 import com.yungnickyoung.minecraft.yungsapi.world.structure.context.StructureContext;
-import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.EnhancedTerrainAdaptation;
-import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.EnhancedTerrainAdaptationType;
+import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.adaptations.EnhancedTerrainAdaptation;
+import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.adaptations.EnhancedTerrainAdaptationType;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.world.level.levelgen.structure.pools.StructurePoolElement;

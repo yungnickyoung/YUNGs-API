@@ -1,4 +1,4 @@
-package com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation;
+package com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.adaptations;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;

@@ -2,9 +2,13 @@ package com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.b
 
 import com.yungnickyoung.minecraft.yungsapi.mixin.BeardifierMixin;
 import com.yungnickyoung.minecraft.yungsapi.mixin.accessor.BeardifierAccessor;
+import com.yungnickyoung.minecraft.yungsapi.mixin.accessor.NoiseChunkAccessor;
 import com.yungnickyoung.minecraft.yungsapi.world.structure.YungJigsawStructure;
 import com.yungnickyoung.minecraft.yungsapi.world.structure.jigsaw.element.YungJigsawPoolElement;
-import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.EnhancedTerrainAdaptation;
+import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.adaptations.EnhancedTerrainAdaptation;
+import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.aquiferoverride.AquiferOverride;
+import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.aquiferoverride.AquiferOverrideMask;
+import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.aquiferoverride.AquiferOverrideMaskSupplier;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import net.minecraft.core.Direction;
@@ -13,6 +17,7 @@ import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.Beardifier;
 import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.NoiseChunk;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
@@ -115,8 +120,9 @@ public class EnhancedBeardifierHelper {
         }
 
         Beardifier newBeardifier = new Beardifier(((BeardifierAccessor) original).getPieceIterator(), ((BeardifierAccessor) original).getJunctionIterator());
-        ((EnhancedBeardifierData) newBeardifier).setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
-        ((EnhancedBeardifierData) newBeardifier).setEnhancedJunctionIterator(enhancedJunctionList.iterator());
+        EnhancedBeardifierData enhancedBeardifier = (EnhancedBeardifierData) newBeardifier;
+        enhancedBeardifier.setEnhancedPieceIterator(enhancedBeardifierRigidList.iterator());
+        enhancedBeardifier.setEnhancedJunctionIterator(enhancedJunctionList.iterator());
         return newBeardifier;
     }
 
@@ -131,6 +137,7 @@ public class EnhancedBeardifierHelper {
         int x = ctx.blockX();
         int y = ctx.blockY();
         int z = ctx.blockZ();
+        AquiferOverride aquiferOverride = AquiferOverride.NONE;
 
         while (data.getEnhancedPieceIterator() != null && data.getEnhancedPieceIterator().hasNext()) {
             EnhancedBeardifierRigid rigid = data.getEnhancedPieceIterator().next();
@@ -181,6 +188,9 @@ public class EnhancedBeardifierHelper {
             }
 
             density += densityFactor;
+            if (densityFactor != 0 && pieceTerrainAdaptation.getAquiferOverride() != AquiferOverride.NONE) {
+                aquiferOverride = pieceTerrainAdaptation.getAquiferOverride();
+            }
         }
         data.getEnhancedPieceIterator().back(Integer.MAX_VALUE);
 
@@ -196,15 +206,39 @@ public class EnhancedBeardifierHelper {
             int xDistanceToJunction = x - jigsawJunction.getSourceX();
             int yDistanceToJunction = y - groundY;
             int zDistanceToJunction = z - jigsawJunction.getSourceZ();
-            density += pieceTerrainAdaptation.computeDensityFactor(
+            double densityFactor = pieceTerrainAdaptation.computeDensityFactor(
                     xDistanceToJunction,
                     yDistanceToJunction,
                     zDistanceToJunction,
                     yDistanceToJunction
             ) * 0.4D;
+
+            density += densityFactor;
+            if (densityFactor != 0 && pieceTerrainAdaptation.getAquiferOverride() != AquiferOverride.NONE) {
+                aquiferOverride = pieceTerrainAdaptation.getAquiferOverride();
+            }
         }
         data.getEnhancedJunctionIterator().back(Integer.MAX_VALUE);
 
+        // Set the aquifer override mask for this position if the density was modified and if
+        // the relevant EnhancedTerrainAdaptation specifies that it should override aquifer liquids.
+        if (aquiferOverride != AquiferOverride.NONE) {
+            updateAquiferOverrideMask(data, aquiferOverride, x, y, z);
+        }
+
         return density;
+    }
+
+    private static void updateAquiferOverrideMask(EnhancedBeardifierData data, AquiferOverride aquiferOverride, int x, int y, int z) {
+        NoiseChunk noiseChunk = data.getNoiseChunk();
+        NoiseChunkAccessor noiseChunkAccessor = (NoiseChunkAccessor) noiseChunk;
+        AquiferOverrideMaskSupplier aquiferOverrideMaskSupplier = (AquiferOverrideMaskSupplier) noiseChunk;
+
+        int chunkHeight = noiseChunkAccessor.getNoiseSettings().height();
+        int minY = noiseChunkAccessor.getNoiseSettings().minY();
+
+        AquiferOverrideMask aquiferOverrideMask = aquiferOverrideMaskSupplier.getOrCreateAquiferOverrideMask(() -> new AquiferOverrideMask(chunkHeight, minY));
+        aquiferOverrideMask.set(x, y, z);
+        aquiferOverrideMask.setAquiferOverride(aquiferOverride);
     }
 }

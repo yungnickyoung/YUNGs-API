@@ -1,11 +1,14 @@
-package com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation;
+package com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.adaptations;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.yungnickyoung.minecraft.yungsapi.world.structure.YungJigsawStructure;
+import com.yungnickyoung.minecraft.yungsapi.world.structure.terrainadaptation.aquiferoverride.AquiferOverride;
 import net.minecraft.Util;
 import net.minecraft.util.Mth;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.levelgen.structure.TerrainAdjustment;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Extra alternatives to vanilla's {@link TerrainAdjustment}, for use with {@link YungJigsawStructure}.
@@ -53,6 +56,13 @@ public abstract class EnhancedTerrainAdaptation {
     private final Padding padding;
 
     /**
+     * Whether to keep liquid blocks placed by aquifers in block positions that are also carved by the enhanced terrain adaptation.
+     * If unset (or set to AquiferOverride.NONE), liquid blocks will be unmodified. This is vanilla behavior.
+     * This field can be useful for underground structures that use a carving TerrainAction without a wall/ceiling.
+     */
+    private final AquiferOverride aquiferOverride;
+
+    /**
      * 3-dimensional kernel for smoothing terrain.
      * Values will vary from near-zero along the edges, to near-1 in the middle.
      * These values are used as noise to modify the noise density at specific positions during terrain generation.
@@ -61,13 +71,15 @@ public abstract class EnhancedTerrainAdaptation {
 
     abstract public EnhancedTerrainAdaptationType<?> type();
 
-    EnhancedTerrainAdaptation(int kernelSize, int kernelDistance, TerrainAction topAction, TerrainAction bottomAction, double bottomOffset, Padding padding) {
+    EnhancedTerrainAdaptation(int kernelSize, int kernelDistance, TerrainAction topAction, TerrainAction bottomAction,
+                              double bottomOffset, Padding padding, AquiferOverride aquiferOverride) {
         this.kernelSize = kernelSize;
         this.kernelDistance = kernelDistance;
         this.topAction = topAction;
         this.bottomAction = bottomAction;
         this.bottomOffset = bottomOffset;
         this.padding = padding;
+        this.aquiferOverride = aquiferOverride;
         int kernelRadius = this.getKernelRadius();
         this.kernel = Util.make(new float[kernelSize * kernelSize * kernelSize], (kernel) -> {
             for (int x = 0; x < kernelSize; ++x) {
@@ -108,6 +120,10 @@ public abstract class EnhancedTerrainAdaptation {
 
     public Padding getPadding() {
         return this.padding;
+    }
+
+    public AquiferOverride getAquiferOverride() {
+        return aquiferOverride;
     }
 
     public int getKernelSize() {
@@ -180,6 +196,13 @@ public abstract class EnhancedTerrainAdaptation {
         return z * this.kernelSize * this.kernelSize + x * this.kernelSize + y;
     }
 
+    /**
+     * Padding to apply to the piece's bounding box when applying the terrain adaptation.
+     * This can be used to effectively change the size of the adaptation in specific dimensions.
+     * For example, if you use a padding of top=1, the piece's bounding box will be temporarily expanded by 1 block in the y-axis,
+     * effectively making the terrain adaptation an ellipsoid instead of a sphere.
+     * Note that padding values can also be negative to shrink the adaptation in specific dimensions.
+     */
     public record Padding(int x, int top, int bottom, int z) {
             public static final Padding ZERO = new Padding(0, 0, 0, 0);
             public static final Codec<Padding> CODEC = RecordCodecBuilder.create((instance) -> instance.group(
@@ -188,6 +211,39 @@ public abstract class EnhancedTerrainAdaptation {
                     Codec.INT.optionalFieldOf("bottom", 0).forGetter((padding) -> padding.bottom),
                     Codec.INT.optionalFieldOf("z", 0).forGetter((padding) -> padding.z)
             ).apply(instance, Padding::new));
+    }
 
+    /**
+     * Represents an action to take when adapting terrain around a structure piece.
+     * This is used to modify the noise density at the position of the terrain action.
+     */
+    public enum TerrainAction implements StringRepresentable {
+        CARVE("carve", -1),
+        BURY("bury", 1),
+        NONE("none", 0);
+
+        public static final Codec<TerrainAction> CODEC = StringRepresentable.fromValues(TerrainAction::values);
+        private final String name;
+
+        /**
+         * The modifier to apply to the noise density at the position of the terrain action.
+         * This is a simple sign multiplier to the noise density.
+         * Carving uses -1 to reduce the density, burying uses +1 to increase the density, and none uses 0 to keep the density the same.
+         */
+        private final int densityModifier;
+
+        TerrainAction(String name, int densityModifier) {
+            this.name = name;
+            this.densityModifier = densityModifier;
+        }
+
+        public int getDensityModifier() {
+            return densityModifier;
+        }
+
+        @Override
+        public @NotNull String getSerializedName() {
+            return name;
+        }
     }
 }
